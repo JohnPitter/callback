@@ -16,8 +16,13 @@ class TokenData(BaseModel):
     expires_in: int
 
 
-@app.post("/callback")
-def store_token(token_data: TokenData):
+@app.get("/")
+def read_root():
+    return JSONResponse(content={"message": "Bem vindo ao Callback"}, status_code=200)
+
+
+@app.get("/callback")
+def callback(token_data: TokenData):
     # Armazenar o token na memória (pode ser banco de dados, etc.)
     tokens["access_token"] = token_data.access_token
     tokens["token_type"] = token_data.token_type
