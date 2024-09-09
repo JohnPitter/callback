@@ -1,15 +1,15 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse, JSONResponse
-import requests
 
 app = FastAPI()
 
+# Variável global para armazenar o código de callback
+callback_code = None
+
 # Configurações do Spotify
-CLIENT_ID = "YOUR_SPOTIFY_CLIENT_ID"
-CLIENT_SECRET = "YOUR_SPOTIFY_CLIENT_SECRET"
-REDIRECT_URI = (
-    "http://localhost:8000/callback"  # A URL para onde o Spotify irá redirecionar
-)
+CLIENT_ID = "4f472f06012b4431b32c2c8103643055"
+CLIENT_SECRET = "848a03c4b0f54153989835786ed74d94"
+REDIRECT_URI = "https://callback-jals.onrender.com/callback"  # A URL para onde o Spotify irá redirecionar
 AUTH_URL = "https://accounts.spotify.com/authorize"
 TOKEN_URL = "https://accounts.spotify.com/api/token"
 
@@ -31,37 +31,25 @@ def login():
 # Rota de callback onde o Spotify redireciona após o login
 @app.get("/callback")
 def callback(request: Request):
+    global callback_code
     code = request.query_params.get("code")
 
     if not code:
         return JSONResponse({"error": "Authorization code not found"}, status_code=400)
 
-    # Trocar o código de autorização pelo token de acesso
-    token_response = requests.post(
-        TOKEN_URL,
-        data={
-            "grant_type": "authorization_code",
-            "code": code,
-            "redirect_uri": REDIRECT_URI,
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-        },
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-    )
+    # Armazenar o código do callback na variável global
+    callback_code = code
 
-    # Verificar se a resposta foi bem sucedida
-    if token_response.status_code != 200:
-        return JSONResponse(
-            {"error": "Failed to get access token", "details": token_response.content},
-            status_code=400,
-        )
+    return JSONResponse({"message": "Authorization code received and stored"})
 
-    # Obter o token de acesso
-    token_json = token_response.json()
-    access_token = token_json.get("access_token")
 
-    # Retornar o token de acesso ou fazer algo com ele
-    return JSONResponse({"access_token": access_token})
+# Rota para retornar o código de callback armazenado
+@app.get("/getCode")
+def get_code():
+    if callback_code:
+        return JSONResponse({"callback_code": callback_code}, status_code=200)
+    else:
+        return JSONResponse({"error": "No callback code stored"}, status_code=404)
 
 
 if __name__ == "__main__":
