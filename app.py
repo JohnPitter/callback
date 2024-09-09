@@ -7,7 +7,7 @@ app = FastAPI()
 # Replace these with your Spotify app's credentials
 CLIENT_ID = "4f472f06012b4431b32c2c8103643055"
 CLIENT_SECRET = "848a03c4b0f54153989835786ed74d94"
-REDIRECT_URI = "http://https://callback-jals.onrender.com/callback"
+REDIRECT_URI = "https://callback-jals.onrender.com/callback"
 
 # Authorization URL for Spotify
 AUTH_URL = "https://accounts.spotify.com/authorize"
