@@ -52,7 +52,7 @@ def callback(request: Request, code: str = None, error: str = None):
         access_token = token_data.get("access_token")
 
         # Redirect back to the frontend with the access token (could also return it directly)
-        frontend_url = f"http://localhost:5500/index.html?access_token={access_token}"
+        frontend_url = f"https://johnpitter.github.io/player/index.html?access_token={access_token}"
         return RedirectResponse(frontend_url)
     else:
         return {"error": "Authorization code not found"}
