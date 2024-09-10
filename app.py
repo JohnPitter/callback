@@ -16,7 +16,7 @@ app = FastAPI()
 # Configuração do CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://johnpitter.github.io"],  # Domínio permitido
+    allow_origins=["*"],  # Domínio permitido
     allow_credentials=True,
     allow_methods=[
         "*"
