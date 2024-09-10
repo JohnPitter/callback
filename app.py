@@ -3,14 +3,15 @@ from fastapi.responses import RedirectResponse
 import requests
 import base64
 import os
-#from dotenv import load_dotenv
+
+# from dotenv import load_dotenv
 from urllib.parse import urlencode
 import random
 import string
 
 app = FastAPI()
 
-#load_dotenv()
+# load_dotenv()
 
 spotify_client_id = os.getenv("SPOTIFY_CLIENT_ID")
 spotify_client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
@@ -75,7 +76,7 @@ async def callback(request: Request):
     if response.status_code == 200:
         body = response.json()
         access_token = body.get("access_token", "")
-        return RedirectResponse(url="/")
+        return RedirectResponse(url="https://johnpitter.github.io/player")
     else:
         raise HTTPException(
             status_code=response.status_code, detail="Failed to retrieve access token"
