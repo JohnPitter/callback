@@ -1,73 +1,92 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse, JSONResponse
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.responses import RedirectResponse
 import requests
+import base64
+import os
+#from dotenv import load_dotenv
+from urllib.parse import urlencode
+import random
+import string
 
 app = FastAPI()
 
-# Replace these with your Spotify app's credentials
-CLIENT_ID = "4f472f06012b4431b32c2c8103643055"
-CLIENT_SECRET = "848a03c4b0f54153989835786ed74d94"
-REDIRECT_URI = "https://callback-jals.onrender.com/callback"
+#load_dotenv()
 
-# Authorization URL for Spotify
-AUTH_URL = "https://accounts.spotify.com/authorize"
-TOKEN_URL = "https://accounts.spotify.com/api/token"
+spotify_client_id = os.getenv("SPOTIFY_CLIENT_ID")
+spotify_client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+spotify_redirect_uri = "https://callback-jals.onrender.com/auth/callback"
 
-# Scopes needed for the app
-SCOPES = "user-read-private user-read-email user-modify-playback-state streaming"
+access_token = ""
 
 
-@app.get("/")
-def login():
-    """Redirect the user to Spotify's authorization page."""
-    auth_url = f"{AUTH_URL}?response_type=code&client_id={CLIENT_ID}&scope={SCOPES}&redirect_uri={REDIRECT_URI}"
-    return RedirectResponse(auth_url)
+# Função para gerar string aleatória
+def generate_random_string(length: int):
+    possible = string.ascii_letters + string.digits
+    return "".join(random.choice(possible) for i in range(length))
 
 
-@app.get("/callback")
-def callback(request: Request, code: str = None, error: str = None):
-    """Callback endpoint to capture the authorization code and exchange it for an access token."""
-    if error:
-        return JSONResponse({"error": error})
+# Rota para login
+@app.get("/auth/login")
+async def login():
+    scope = "streaming user-read-email user-read-private"
+    state = generate_random_string(16)
 
-    if code:
-        # Exchange authorization code for access token
-        token_response = requests.post(
-            TOKEN_URL,
-            data={
-                "grant_type": "authorization_code",
-                "code": code,
-                "redirect_uri": REDIRECT_URI,
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
+    auth_query_parameters = {
+        "response_type": "code",
+        "client_id": spotify_client_id,
+        "scope": scope,
+        "redirect_uri": spotify_redirect_uri,
+        "state": state,
+    }
+
+    url = "https://accounts.spotify.com/authorize/?" + urlencode(auth_query_parameters)
+    return RedirectResponse(url=url)
+
+
+# Rota de callback
+@app.get("/auth/callback")
+async def callback(request: Request):
+    global access_token
+    code = request.query_params.get("code")
+
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing authorization code")
+
+    auth_options = {
+        "url": "https://accounts.spotify.com/api/token",
+        "data": {
+            "code": code,
+            "redirect_uri": spotify_redirect_uri,
+            "grant_type": "authorization_code",
+        },
+        "headers": {
+            "Authorization": "Basic "
+            + base64.b64encode(
+                f"{spotify_client_id}:{spotify_client_secret}".encode()
+            ).decode(),
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+    }
+
+    response = requests.post(
+        auth_options["url"], data=auth_options["data"], headers=auth_options["headers"]
+    )
+
+    if response.status_code == 200:
+        body = response.json()
+        access_token = body.get("access_token", "")
+        return RedirectResponse(url="/")
+    else:
+        raise HTTPException(
+            status_code=response.status_code, detail="Failed to retrieve access token"
         )
 
-        if token_response.status_code != 200:
-            return {"error": "Failed to get access token"}
 
-        # Extract the token from the response
-        token_data = token_response.json()
-        access_token = token_data.get("access_token")
-
-        # Redirect back to the frontend with the access token (could also return it directly)
-        frontend_url = f"https://johnpitter.github.io/player/index.html?access_token={access_token}"
-        return RedirectResponse(frontend_url)
-    else:
-        return {"error": "Authorization code not found"}
-
-
-@app.get("/user_profile")
-def get_user_profile(access_token: str):
-    """Fetch user profile information using the access token."""
-    headers = {"Authorization": f"Bearer {access_token}"}
-    response = requests.get("https://api.spotify.com/v1/me", headers=headers)
-
-    if response.status_code != 200:
-        return {"error": "Failed to fetch user profile"}
-
-    return response.json()
+# Rota para obter o token
+@app.get("/auth/token")
+async def get_token():
+    global access_token
+    return {"access_token": access_token}
 
 
 if __name__ == "__main__":
