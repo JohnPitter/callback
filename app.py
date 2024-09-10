@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 import requests
 import base64
 import os
@@ -10,6 +11,24 @@ import random
 import string
 
 app = FastAPI()
+
+
+# Configuração do CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://johnpitter.github.io"],  # Domínio permitido
+    allow_credentials=True,
+    allow_methods=[
+        "*"
+    ],  # Permitir todos os métodos HTTP (GET, POST, PUT, DELETE, etc.)
+    allow_headers=["*"],  # Permitir todos os cabeçalhos
+)
+
+
+@app.get("/")
+async def read_root():
+    return {"message": "CORS is working!"}
+
 
 # load_dotenv()
 
