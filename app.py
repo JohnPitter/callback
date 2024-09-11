@@ -95,7 +95,7 @@ async def callback(request: Request):
     if response.status_code == 200:
         body = response.json()
         access_token = body.get("access_token", "")
-        return RedirectResponse(url="https://johnpitter.github.io/player")
+        return {"access_token": access_token}
     else:
         raise HTTPException(
             status_code=response.status_code, detail="Failed to retrieve access token"
