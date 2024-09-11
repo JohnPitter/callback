@@ -48,7 +48,7 @@ def generate_random_string(length: int):
 # Rota para login
 @app.get("/auth/login")
 async def login():
-    scope = "streaming user-read-email user-read-private"
+    scope = "user-read-private user-read-email user-modify-playback-state streaming"
     state = generate_random_string(16)
 
     auth_query_parameters = {
@@ -95,7 +95,12 @@ async def callback(request: Request):
     if response.status_code == 200:
         body = response.json()
         access_token = body.get("access_token", "")
-        return RedirectResponse(url="https://johnpitter.github.io/player")
+        
+        # Define o cookie de token de acesso
+        redirect_response = RedirectResponse(url="https://johnpitter.github.io/player")
+        redirect_response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True)
+
+        return redirect_response
     else:
         raise HTTPException(
             status_code=response.status_code, detail="Failed to retrieve access token"
