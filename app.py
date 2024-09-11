@@ -95,10 +95,12 @@ async def callback(request: Request):
     if response.status_code == 200:
         body = response.json()
         access_token = body.get("access_token", "")
-        
+
         # Define o cookie de token de acesso
         redirect_response = RedirectResponse(url="https://johnpitter.github.io/player")
-        redirect_response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True)
+        redirect_response.set_cookie(
+            key="access_token", value=access_token, httponly=False, secure=True
+        )
 
         return redirect_response
     else:
